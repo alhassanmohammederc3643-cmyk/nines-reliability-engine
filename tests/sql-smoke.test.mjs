@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import {PGlite} from '@electric-sql/pglite';
+test('rebuilt isolated PostgreSQL migration loads',async()=>{const db=new PGlite();try{await db.exec(fs.readFileSync('supabase/migrations/20261007_nines_rebuilt.sql','utf8'));const r=await db.query("select nines.valid_order('{}'::jsonb) as valid");assert.equal(r.rows[0].valid,false)}finally{await db.close()}});
