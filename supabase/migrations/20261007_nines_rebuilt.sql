@@ -110,3 +110,9 @@ end $$;
 revoke all on schema nines from public;
 revoke all on all tables in schema nines from public;
 revoke all on all functions in schema nines from public;
+-- Prepared real x402 quotes. This does not enable real engine execution.
+create table nines.x402_quotes(id uuid primary key,owner text not null,task_id text not null,quote jsonb not null,hash text not null,
+ state text not null default 'PLANNED' check(state in ('PLANNED','CHARGING','VERIFYING','VERIFIED','SETTLEMENT_UNKNOWN')),
+ approval jsonb,signed_payload jsonb,submitted_at timestamptz,outcome jsonb,created_at timestamptz not null default now(),unique(owner,id));
+alter table nines.x402_quotes enable row level security;
+revoke all on nines.x402_quotes from public;
