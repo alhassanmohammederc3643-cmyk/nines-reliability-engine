@@ -1,0 +1,27 @@
+import {accessToken} from '../lib/gmail';
+import type {MailReader,ProviderMail} from './email-ingest';
+/** Owner-scoped read-only Gmail adapter. Caller must fetch the owning member's encrypted grant. */
+export class GmailReceiptReader implements MailReader{
+ constructor(private readonly ownerId:string,private readonly encryptedRefreshToken:string){}
+ async getMessage(ownerId:string,messageId:string):Promise<ProviderMail|null>{
+  if(ownerId!==this.ownerId)throw Error('Receipt owner mismatch');
+  if(!/^[0-9a-f]{8,32}$/i.test(messageId))throw Error('Invalid Gmail message ID');
+  const token=await accessToken(this.encryptedRefreshToken);
+  const response=await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});
+  if(response.status===404)return null;if(!response.ok)throw Error(`Gmail receipt read failed (${response.status})`);
+  const raw=await response.json();
+  const headers:(name:string)=>string=(name)=>String((raw.payload?.headers||[]).find((h:{name:string})=>h.name.toLowerCase()===name.toLowerCase())?.value||'');
+  const auth=headers('Authentication-Results');const from=headers('From');
+  const match=/<([^<>]+)>/.exec(from);const fromAddress=(match?match[1]:from).trim().toLowerCase();
+  // Auth results without alignment evidence are insufficient to assert merchant authorship.
+  const domain=fromAddress.split('@')[1]||'';
+  const aligned=domain&&new RegExp(`(?:^|[;\\s])header\\.from=${domain.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?:[;\\s]|$)`,'i').test(auth);
+  const dmarc=aligned&&/\bdmarc=pass\b/i.test(auth)?'pass':'none';
+  const dkim=/\bdkim=pass\b/i.test(auth)?'pass':'none';const spf=/\bspf=pass\b/i.test(auth)?'pass':'none';
+  const plain=(part:{mimeType?:string;body?:{data?:string};parts?:unknown[]}):string=>{
+   if(part.mimeType==='text/plain'&&part.body?.data)return Buffer.from(part.body.data,'base64url').toString('utf8');
+   for(const child of (part.parts||[]) as typeof part[]){const text=plain(child);if(text)return text}return '';
+  };
+  return {messageId:String(raw.id||''),fromAddress,plainText:plain(raw.payload||{}).slice(0,20000),receivedAt:new Date(Number(raw.internalDate)).toISOString(),labels:Array.isArray(raw.labelIds)?raw.labelIds:[],authResults:{spf,dkim,dmarc}};
+ }
+}
