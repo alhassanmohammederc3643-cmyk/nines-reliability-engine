@@ -4,7 +4,7 @@ Reconstructed isolated engine. No production release or live charge/send/model c
 
 ## Verified
 
-- 92 automated tests passed, strict TypeScript typecheck passed.
+- 110 automated tests passed, strict TypeScript typecheck passed.
 - Durable offline PostgreSQL intake, complete-order review and lease/effect gates.
 - All ten reviewed order fields plus connection/account version bound by the new SQL gate.
 - Idempotent simulation ledger, safe-decline backoff and three-attempt circuit breaker.
@@ -19,7 +19,7 @@ Reconstructed isolated engine. No production release or live charge/send/model c
 
 - Simulation and prepared real x402 path remain separate, not one production service.
 - No hosted worker/HTTP app/consent UI deployed. Host/session middleware still needs wiring.
-- RealStore is a trusted-server boundary; it cannot accept arbitrary agent/model approval objects. Original exact owner consent must be captured by the host.
+- Durable host consent capture and one-use atomic charge claim restored from Oct 7 authored code. Actual MINI human-presence verification remains unwired; real charges disabled.
 - Real payment unknown-outcome reconciliation/retry and approval fencing require further tests, including stale host/session, deadlines during network calls and multi-session PostgreSQL races.
 - Real settlement verifier needs live read-only integration proof and required confirmation/finality policy.
 - Receipt parsing currently uses documented structured offline fixtures. Live merchant parsing and trusted gateway-header extraction remain unwired.

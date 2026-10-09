@@ -116,3 +116,6 @@ create table nines.x402_quotes(id uuid primary key,owner text not null,task_id t
  approval jsonb,signed_payload jsonb,submitted_at timestamptz,outcome jsonb,created_at timestamptz not null default now(),unique(owner,id));
 alter table nines.x402_quotes enable row level security;
 revoke all on nines.x402_quotes from public;
+create table nines.charge_consents(owner text not null,quote_id uuid not null,quote_hash text not null,approval jsonb not null,displayed_charge jsonb not null,presence_evidence text not null check(length(presence_evidence)>0),created_at timestamptz not null default now(),consumed_at timestamptz,primary key(owner,quote_id),foreign key(owner,quote_id) references nines.x402_quotes(owner,id));
+alter table nines.charge_consents enable row level security;
+revoke all on nines.charge_consents from public;
